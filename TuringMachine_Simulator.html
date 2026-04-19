@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Turing Machine Simulator — Theory of Computation</title>
+<style>
+  :root {
+    --blue-50:#E6F1FB;--blue-100:#B5D4F4;--blue-600:#185FA5;--blue-800:#0C447C;--blue-900:#042C53;
+    --teal-50:#E1F5EE;--teal-600:#0F6E56;--teal-800:#085041;
+    --red-50:#FCEBEB;--red-600:#A32D2D;--red-800:#791F1F;
+    --amber-50:#FAEEDA;--amber-600:#BA7517;--amber-800:#633806;
+    --gray-50:#F1EFE8;--gray-100:#D3D1C7;--gray-400:#888780;--gray-800:#444441;
+    --green-50:#EAF3DE;--green-600:#3B6D11;
+    --bg:#fff;--bg2:#f7f6f2;--bg3:#f1f0ec;
+    --text:#1a1a18;--text2:#5a5955;--text3:#9a9890;
+    --border:#e2e0d8;--border2:#cbc9c0;
+    --radius:8px;--radius-lg:12px;
+    --font:'Segoe UI',Arial,sans-serif;--mono:'Consolas','Courier New',monospace;
+  }
+  @media(prefers-color-scheme:dark){
+    :root{
+      --bg:#1c1c1a;--bg2:#252522;--bg3:#2e2e2b;
+      --text:#e8e6de;--text2:#a8a69e;--text3:#686660;
+      --border:#3a3a36;--border2:#4a4a46;
+    }
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:15px;line-height:1.6}
+  
+  /* ---- HEADER ---- */
+  .header{background:linear-gradient(135deg,#042C53 0%,#185FA5 60%,#0F6E56 100%);color:#fff;padding:2.5rem 2rem 2rem;text-align:center}
+  .header h1{font-size:28px;font-weight:700;letter-spacing:-0.5px;margin-bottom:.4rem}
+  .header .sub{font-size:14px;opacity:.85;margin-bottom:1rem}
+  .meta-pills{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  .pill{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;padding:3px 12px;font-size:12px}
+
+  /* ---- TABS ---- */
+  .tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg2);overflow-x:auto}
+  .tab{padding:.7rem 1.4rem;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s}
+  .tab:hover{color:var(--text);background:var(--bg3)}
+  .tab.active{color:var(--blue-600);border-bottom-color:var(--blue-600);background:var(--bg)}
+  .tab-content{display:none;padding:1.5rem 2rem}
+  .tab-content.active{display:block}
+
+  /* ---- MACHINES ---- */
+  .machine-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:1.2rem}
+  .mcard{border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:.8rem 1rem;cursor:pointer;transition:all .15s;background:var(--bg)}
+  .mcard:hover{border-color:var(--blue-100);background:var(--blue-50)}
+  .mcard.active{border-color:var(--blue-600);background:var(--blue-50)}
+  .mcard h3{font-size:13px;font-weight:600;color:var(--blue-800);margin-bottom:3px}
+  .mcard p{font-size:11px;color:var(--text2);line-height:1.4}
+  .mcard .lang{font-size:11px;font-family:var(--mono);background:var(--bg3);padding:2px 6px;border-radius:4px;display:inline-block;margin-top:4px;color:var(--blue-600)}
+
+  /* ---- DESCRIPTION ---- */
+  .desc-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:.8rem 1rem;font-size:13px;color:var(--text2);margin-bottom:1rem;line-height:1.65}
+  .desc-box strong{color:var(--text);font-weight:600}
+
+  /* ---- INPUT ---- */
+  .input-row{display:flex;align-items:center;gap:8px;margin-bottom:1rem;flex-wrap:wrap}
+  .input-row label{font-size:13px;color:var(--text2);white-space:nowrap}
+  .input-row input[type=text]{padding:7px 10px;font-size:14px;font-family:var(--mono);border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);min-width:160px;flex:1;max-width:220px}
+  .input-row input[type=text]:focus{outline:none;border-color:var(--blue-600)}
+  .examples{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
+  .ex-btn{padding:3px 9px;font-size:11px;font-family:var(--mono);border:1px solid var(--border2);border-radius:4px;cursor:pointer;background:var(--bg);color:var(--text2);transition:all .12s}
+  .ex-btn:hover{background:var(--blue-50);color:var(--blue-800);border-color:var(--blue-600)}
+
+  /* ---- TAPE ---- */
+  .tape-wrap{overflow-x:auto;padding:4px 0 8px;margin-bottom:.8rem}
+  .tape{display:flex;gap:3px;min-width:max-content}
+  .cell{width:46px;height:46px;flex-shrink:0;border:1.5px solid var(--border2);border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:20px;font-weight:600;background:var(--bg);color:var(--text);transition:all .2s;position:relative}
+  .cell .cidx{font-size:9px;color:var(--text3);font-weight:400;position:absolute;top:2px;left:0;right:0;text-align:center}
+  .cell .csym{line-height:1}
+  .cell.head{border:2.5px solid var(--blue-600);background:var(--blue-50);color:var(--blue-800)}
+  .cell.head::after{content:'▼';position:absolute;top:-16px;font-size:10px;color:var(--blue-600)}
+  .cell.head.acc{border-color:var(--teal-600);background:var(--teal-50);color:var(--teal-800)}
+  .cell.head.acc::after{color:var(--teal-600)}
+  .cell.head.rej{border-color:var(--red-600);background:var(--red-50);color:var(--red-800)}
+  .cell.head.rej::after{color:var(--red-600)}
+  .cell.written{background:var(--amber-50);border-color:var(--amber-600)}
+
+  /* ---- STATUS ---- */
+  .status-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:.9rem}
+  .badge{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600}
+  .b-st{background:var(--blue-50);color:var(--blue-800);border:1px solid var(--blue-100)}
+  .b-acc{background:var(--teal-50);color:var(--teal-800);border:1px solid #9FE1CB}
+  .b-rej{background:var(--red-50);color:var(--red-800);border:1px solid #F7C1C1}
+  .b-run{background:var(--amber-50);color:var(--amber-800);border:1px solid #FAC775}
+  .b-info{background:var(--bg2);color:var(--text2);border:1px solid var(--border);font-weight:400}
+
+  /* ---- CONTROLS ---- */
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;align-items:center}
+  .btn{padding:7px 16px;font-size:13px;font-weight:500;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text);cursor:pointer;transition:all .15s}
+  .btn:hover{background:var(--bg2)}
+  .btn:disabled{opacity:.38;cursor:default}
+  .btn.primary{border-color:var(--blue-600);background:var(--blue-50);color:var(--blue-600)}
+  .btn.primary:hover:not(:disabled){background:var(--blue-100)}
+  .btn.danger{border-color:var(--red-600);background:var(--red-50);color:var(--red-600)}
+  .speed-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);margin-bottom:1rem}
+  .speed-row input{flex:1;max-width:140px}
+
+  /* ---- RESULT BANNER ---- */
+  .result{padding:.6rem 1rem;border-radius:var(--radius);font-size:14px;font-weight:600;text-align:center;margin-top:.5rem;margin-bottom:.5rem;display:none}
+  .result.acc{display:block;background:var(--teal-50);color:var(--teal-800);border:1.5px solid #5DCAA5}
+  .result.rej{display:block;background:var(--red-50);color:var(--red-800);border:1.5px solid #F09595}
+
+  /* ---- LOG ---- */
+  .log-box{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);font-size:12px;font-family:var(--mono);max-height:140px;overflow-y:auto;padding:.5rem .8rem;color:var(--text2);line-height:1.8}
+  .log-box .la{color:var(--teal-600);font-weight:600}
+  .log-box .lr{color:var(--red-600);font-weight:600}
+
+  /* ---- TRANSITIONS ---- */
+  .trans-section{margin-top:1.2rem}
+  .trans-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.5px}
+  .trans-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px}
+  .tcell{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:.35rem .7rem;font-size:11.5px;font-family:var(--mono);color:var(--text2);transition:all .2s}
+  .tcell.active{border-color:var(--blue-600);background:var(--blue-50);color:var(--blue-800);font-weight:600}
+
+  /* ---- THEORY TAB ---- */
+  .theory-section{max-width:700px}
+  .theory-section h2{font-size:20px;font-weight:700;margin-bottom:.8rem;color:var(--text)}
+  .theory-section h3{font-size:15px;font-weight:600;margin:1.2rem 0 .4rem;color:var(--blue-800)}
+  .theory-section p{font-size:14px;color:var(--text2);margin-bottom:.7rem;line-height:1.7}
+  .theory-section ul{margin:.4rem 0 .8rem 1.5rem;font-size:14px;color:var(--text2);line-height:1.8}
+  .formal-box{background:var(--bg2);border-left:3px solid var(--blue-600);padding:.8rem 1rem;border-radius:0 var(--radius) var(--radius) 0;font-family:var(--mono);font-size:13px;margin:.8rem 0;color:var(--text)}
+  .concept-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:1rem 0}
+  .ccard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:.9rem 1rem}
+  .ccard h4{font-size:13px;font-weight:600;color:var(--blue-800);margin-bottom:.4rem}
+  .ccard p{font-size:12px;color:var(--text2);line-height:1.5}
+
+  /* ---- ABOUT TAB ---- */
+  .about-section{max-width:680px}
+  .about-section h2{font-size:20px;font-weight:700;margin-bottom:1rem}
+  .about-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:1rem 0}
+  .acard{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:.9rem 1rem}
+  .acard h4{font-size:13px;font-weight:600;color:var(--text);margin-bottom:.5rem}
+  .acard p,.acard li{font-size:13px;color:var(--text2);line-height:1.6}
+  .acard ul{margin-left:1.2rem}
+  .complexity-table{width:100%;border-collapse:collapse;font-size:13px;margin:1rem 0}
+  .complexity-table th{background:var(--blue-50);color:var(--blue-800);padding:7px 10px;text-align:left;border:1px solid var(--blue-100);font-weight:600}
+  .complexity-table td{padding:6px 10px;border:1px solid var(--border);color:var(--text2)}
+  .complexity-table tr:nth-child(even) td{background:var(--bg2)}
+
+  /* ---- DIAGRAM TAB ---- */
+  .diagram-wrap{overflow-x:auto}
+  svg text{font-family:var(--font)}
+
+  footer{text-align:center;padding:1.5rem;font-size:12px;color:var(--text3);border-top:1px solid var(--border);margin-top:1rem}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⊢ Turing Machine Simulator</h1>
+  <div class="sub">Theory of Computation — Class Participation Assignment</div>
+  <div class="meta-pills">
+    <span class="pill">Concept: Turing Machines</span>
+    <span class="pill">4 Machines Simulated</span>
+    <span class="pill">Step-by-step Execution</span>
+    <span class="pill">Interactive Tape</span>
+    <span class="pill">Submitted: April 2026</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('simulator')">▶ Simulator</div>
+  <div class="tab" onclick="switchTab('theory')">📖 Theory</div>
+  <div class="tab" onclick="switchTab('diagram')">🔁 State Diagram</div>
+  <div class="tab" onclick="switchTab('about')">📋 About</div>
+</div>
+
+<!-- ==================== SIMULATOR ==================== -->
+<div class="tab-content active" id="tab-simulator">
+  <div class="machine-grid" id="machine-grid"></div>
+  <div class="desc-box" id="desc-box"></div>
+
+  <div class="input-row">
+    <label>Input string:</label>
+    <input type="text" id="inp" value="aabb"/>
+    <button class="btn primary" onclick="loadMachine()">Load & Reset</button>
+  </div>
+  <div style="font-size:12px;color:var(--text2);margin-bottom:.4rem">Quick examples:</div>
+  <div class="examples" id="examples"></div>
+
+  <div class="status-bar" id="status-bar"></div>
+
+  <div class="tape-wrap"><div class="tape" id="tape"></div></div>
+
+  <div class="controls">
+    <button class="btn primary" id="btn-step" onclick="doStep()">Step ›</button>
+    <button class="btn" id="btn-run" onclick="toggleRun()">▶ Run</button>
+    <button class="btn danger" onclick="loadMachine()">↺ Reset</button>
+  </div>
+  <div class="speed-row">
+    <span>Speed:</span>
+    <input type="range" min="1" max="10" value="5" id="spd" oninput="document.getElementById('spdlbl').textContent=this.value;if(running){toggleRun();toggleRun();}">
+    <span id="spdlbl">5</span>
+  </div>
+
+  <div class="result" id="result"></div>
+  <div class="log-box" id="log"><span style="color:var(--text3)">Press Step or Run to begin execution...</span></div>
+
+  <div class="trans-section">
+    <div class="trans-title">Transition Function δ — (state, read) → (write, move, next state)</div>
+    <div class="trans-grid" id="trans-grid"></div>
+  </div>
+</div>
+
+<!-- ==================== THEORY ==================== -->
+<div class="tab-content" id="tab-theory">
+  <div class="theory-section">
+    <h2>Turing Machines — Theory</h2>
+    <p>A <strong>Turing Machine (TM)</strong> is the most powerful computational model in the Chomsky hierarchy. Proposed by Alan Turing in 1936, it forms the theoretical foundation of modern computing and defines the boundary between what is and is not computable.</p>
+
+    <h3>Formal Definition</h3>
+    <p>A Turing Machine is a 7-tuple:</p>
+    <div class="formal-box">M = (Q, Σ, Γ, δ, q₀, q_accept, q_reject)<br><br>
+Q        — finite set of states<br>
+Σ        — input alphabet (not containing blank symbol □)<br>
+Γ        — tape alphabet (Σ ⊆ Γ, □ ∈ Γ)<br>
+δ        — transition function: Q × Γ → Q × Γ × {L, R}<br>
+q₀ ∈ Q  — start state<br>
+q_accept — accept state<br>
+q_reject — reject state (q_accept ≠ q_reject)</div>
+
+    <h3>How It Works</h3>
+    <p>The TM operates on an infinite tape divided into cells. At each step, it reads the current cell under the head, consults the transition function δ, then writes a symbol, moves left or right, and transitions to a new state. Computation halts when it enters q_accept or q_reject.</p>
+
+    <h3>Key Concepts Demonstrated in this Simulator</h3>
+    <div class="concept-cards">
+      <div class="ccard">
+        <h4>Configurations</h4>
+        <p>A configuration (q, tape, head) captures the complete instantaneous description of a TM. The simulator displays each configuration after every step.</p>
+      </div>
+      <div class="ccard">
+        <h4>Decidability</h4>
+        <p>All 4 machines here are <em>deciders</em> — they always halt on every input. The aⁿbⁿ language is undecidable by DFAs but decidable by a TM.</p>
+      </div>
+      <div class="ccard">
+        <h4>Computation</h4>
+        <p>TMs aren't just language recognizers — the unary adder proves they can compute functions, underpinning the Church-Turing thesis.</p>
+      </div>
+      <div class="ccard">
+        <h4>Tape as Memory</h4>
+        <p>Unlike finite automata, the TM's infinite read-write tape provides unbounded memory, enabling recognition of non-regular and non-context-free languages.</p>
+      </div>
+    </div>
+
+    <h3>The Chomsky Hierarchy</h3>
+    <table class="complexity-table">
+      <tr><th>Grammar Type</th><th>Language Class</th><th>Automaton</th><th>Example</th></tr>
+      <tr><td>Type 3</td><td>Regular</td><td>DFA / NFA</td><td>aⁿ (any n)</td></tr>
+      <tr><td>Type 2</td><td>Context-Free</td><td>Pushdown Automaton</td><td>aⁿbⁿ requires stack</td></tr>
+      <tr><td>Type 1</td><td>Context-Sensitive</td><td>Linear-Bounded TM</td><td>aⁿbⁿcⁿ</td></tr>
+      <tr><td>Type 0</td><td>Recursively Enumerable</td><td>Turing Machine</td><td>All decidable languages</td></tr>
+    </table>
+
+    <h3>The Halting Problem</h3>
+    <p>Turing proved that no TM can decide whether an arbitrary TM halts on a given input — this is the <strong>Halting Problem</strong>, the first undecidable problem. It establishes the fundamental limits of computation and is proven by diagonalization. All 4 machines in this simulator always halt, making them decidable instances.</p>
+
+    <h3>Church-Turing Thesis</h3>
+    <p>Any effectively computable function can be computed by a Turing Machine. This means TMs capture the full power of computation — no physically realizable model is more powerful (though some may be faster).</p>
+  </div>
+</div>
+
+<!-- ==================== DIAGRAM ==================== -->
+<div class="tab-content" id="tab-diagram">
+  <div style="font-size:13px;color:var(--text2);margin-bottom:1rem">State transition diagram for the currently selected machine. States shown as circles; accepting state has double border; rejecting state is red.</div>
+  <div class="diagram-wrap">
+    <svg id="state-diagram" width="100%" viewBox="0 0 700 420" style="max-width:700px;display:block"></svg>
+  </div>
+  <div style="font-size:12px;color:var(--text3);margin-top:.5rem">Transitions: (read / write, Direction)</div>
+</div>
+
+<!-- ==================== ABOUT ==================== -->
+<div class="tab-content" id="tab-about">
+  <div class="about-section">
+    <h2>About This Application</h2>
+    <div class="about-grid">
+      <div class="acard">
+        <h4>Assignment Details</h4>
+        <p><strong>Course:</strong> Theory of Computation<br>
+        <strong>Task:</strong> Class Participation<br>
+        <strong>Concept:</strong> Turing Machines<br>
+        <strong>Deadline:</strong> April 20, 2026, 11:00 PM</p>
+      </div>
+      <div class="acard">
+        <h4>4 Machines Implemented</h4>
+        <ul>
+          <li>aⁿbⁿ Language Recognizer</li>
+          <li>Even Palindrome Checker</li>
+          <li>Unary Addition Compute</li>
+          <li>Unary String Copier</li>
+        </ul>
+      </div>
+      <div class="acard">
+        <h4>Features</h4>
+        <ul>
+          <li>Interactive infinite tape</li>
+          <li>Step-by-step execution</li>
+          <li>Active transition highlight</li>
+          <li>Adjustable run speed</li>
+          <li>Execution trace log</li>
+          <li>State diagram visualization</li>
+        </ul>
+      </div>
+      <div class="acard">
+        <h4>Complexity Level</h4>
+        <p>This simulator covers <strong>4 distinct TM instances</strong> spanning language recognition, function computation, and string transformation — all with formal δ functions, infinite tape model, and full configuration tracing.</p>
+      </div>
+    </div>
+
+    <h3 style="font-size:15px;font-weight:600;color:var(--blue-800);margin:1.2rem 0 .5rem">Why Turing Machines?</h3>
+    <p style="font-size:14px;color:var(--text2);line-height:1.7">Turing Machines are the most fundamental concept in all of Theory of Computation. They define the limits of what computers can and cannot do, form the basis for complexity theory (P vs NP), undecidability, and the Church-Turing thesis. Simulating a TM requires implementing all core elements: states, tape alphabet, transition functions, halting conditions, and formal configuration semantics.</p>
+
+    <table class="complexity-table" style="margin-top:1rem">
+      <tr><th>Machine</th><th>Language / Function</th><th>Key Technique</th><th>TOC Topic</th></tr>
+      <tr><td>aⁿbⁿ Recognizer</td><td>{aⁿbⁿ | n ≥ 1}</td><td>Mark &amp; sweep</td><td>Non-regular decidable languages</td></tr>
+      <tr><td>Palindrome Checker</td><td>Even palindromes over {0,1}</td><td>Bidirectional scan</td><td>Decidability, tape traversal</td></tr>
+      <tr><td>Unary Adder</td><td>m + n in unary</td><td>Symbol manipulation</td><td>TM as function computer</td></tr>
+      <tr><td>String Copier</td><td>1ⁿ → 1ⁿ0 1ⁿ</td><td>Multi-pass carry</td><td>TM transducers</td></tr>
+    </table>
+  </div>
+</div>
+
+<footer>Theory of Computation — Turing Machine Simulator &nbsp;|&nbsp; Submitted April 2026</footer>
+
+<script>
+const BLANK='_';
+const MACHINES=[
+  {id:'anbn',name:'aⁿbⁿ Recognizer',lang:'{aⁿbⁿ | n ≥ 1}',
+   desc:'<strong>Language: {aⁿbⁿ | n ≥ 1}</strong> — Accepts strings with equal numbers of a\'s followed by b\'s. Uses mark-and-sweep: repeatedly marks one \'a\' with X, scans right to mark one \'b\' with Y, returns left and repeats. This language is <strong>not regular</strong> (cannot be recognized by any DFA/NFA) but is <strong>Turing-decidable</strong>. It lies in the context-sensitive class of the Chomsky hierarchy.',
+   q0:'q0',accept:'qa',reject:'qr',
+   examples:['aabb','aaabbb','ab','aab','aaabb'],
+   transitions:[
+     {s:'q0',r:'a',w:'X',d:'R',n:'q1'},{s:'q0',r:'Y',w:'Y',d:'R',n:'q3'},
+     {s:'q0',r:BLANK,w:BLANK,d:'R',n:'qr'},{s:'q0',r:'b',w:'b',d:'R',n:'qr'},
+     {s:'q1',r:'a',w:'a',d:'R',n:'q1'},{s:'q1',r:'Y',w:'Y',d:'R',n:'q1'},
+     {s:'q1',r:'b',w:'Y',d:'L',n:'q2'},{s:'q1',r:BLANK,w:BLANK,d:'R',n:'qr'},
+     {s:'q2',r:'a',w:'a',d:'L',n:'q2'},{s:'q2',r:'Y',w:'Y',d:'L',n:'q2'},
+     {s:'q2',r:'X',w:'X',d:'R',n:'q0'},
+     {s:'q3',r:'Y',w:'Y',d:'R',n:'q3'},{s:'q3',r:BLANK,w:BLANK,d:'R',n:'qa'},
+   ]},
+  {id:'pal',name:'Even Palindrome',lang:'even palindromes/{0,1}',
+   desc:'<strong>Language: even-length binary palindromes</strong> — Checks if a binary string reads the same forwards and backwards. Marks the first character, scans to the last, checks they match, erases both, then repeats. Demonstrates <strong>bidirectional tape traversal</strong> and <strong>recursive string comparison</strong> — impossible for a pushdown automaton (PDA) with non-determinism only.',
+   q0:'q0',accept:'qa',reject:'qr',
+   examples:['0110','1001','0101','01','11'],
+   transitions:[
+     {s:'q0',r:'0',w:BLANK,d:'R',n:'q1'},{s:'q0',r:'1',w:BLANK,d:'R',n:'q5'},
+     {s:'q0',r:BLANK,w:BLANK,d:'R',n:'qa'},
+     {s:'q1',r:'0',w:'0',d:'R',n:'q1'},{s:'q1',r:'1',w:'1',d:'R',n:'q1'},
+     {s:'q1',r:BLANK,w:BLANK,d:'L',n:'q2'},
+     {s:'q2',r:'0',w:BLANK,d:'L',n:'q3'},{s:'q2',r:'1',w:'1',d:'R',n:'qr'},
+     {s:'q2',r:BLANK,w:BLANK,d:'R',n:'qa'},
+     {s:'q3',r:'0',w:'0',d:'L',n:'q3'},{s:'q3',r:'1',w:'1',d:'L',n:'q3'},
+     {s:'q3',r:BLANK,w:BLANK,d:'R',n:'q0'},
+     {s:'q5',r:'0',w:'0',d:'R',n:'q5'},{s:'q5',r:'1',w:'1',d:'R',n:'q5'},
+     {s:'q5',r:BLANK,w:BLANK,d:'L',n:'q6'},
+     {s:'q6',r:'1',w:BLANK,d:'L',n:'q3'},{s:'q6',r:'0',w:'0',d:'R',n:'qr'},
+     {s:'q6',r:BLANK,w:BLANK,d:'R',n:'qa'},
+   ]},
+  {id:'add',name:'Unary Addition',lang:'1ᵐ0 1ⁿ → 1ᵐ⁺ⁿ',
+   desc:'<strong>Computes m + n in unary</strong> — Given input 1ᵐ0 1ⁿ (m ones, separator 0, n ones), produces 1ᵐ⁺ⁿ on the tape by replacing the 0 separator with 1 and erasing one trailing 1. Demonstrates the TM as a <strong>computing device</strong> (not just a recognizer), consistent with the <strong>Church-Turing thesis</strong> that TMs can compute any effectively computable function.',
+   q0:'q0',accept:'qa',reject:'qr',
+   examples:['1011','10111','111011','101','1101'],
+   transitions:[
+     {s:'q0',r:'1',w:'1',d:'R',n:'q0'},{s:'q0',r:'0',w:'1',d:'R',n:'q1'},
+     {s:'q0',r:BLANK,w:BLANK,d:'R',n:'qr'},
+     {s:'q1',r:'1',w:'1',d:'R',n:'q1'},{s:'q1',r:BLANK,w:BLANK,d:'L',n:'q2'},
+     {s:'q2',r:'1',w:BLANK,d:'L',n:'q3'},
+     {s:'q3',r:'1',w:'1',d:'L',n:'q3'},{s:'q3',r:BLANK,w:BLANK,d:'R',n:'qa'},
+   ]},
+  {id:'copy',name:'String Copier',lang:'1ⁿ → 1ⁿ 0 1ⁿ',
+   desc:'<strong>Copies a unary string</strong> — Given 1ⁿ, produces 1ⁿ 0 1ⁿ on the tape using a carry-and-stamp technique. Marks each \'1\' with \'X\', appends a \'1\' after a separator, then restores X\'s to 1\'s. This is a <strong>TM transducer</strong> — a machine that transforms tape content rather than just accepting/rejecting. Illustrates <strong>multi-pass tape algorithms</strong> and the power of the TM beyond simple recognition.',
+   q0:'q0',accept:'qa',reject:'qr',
+   examples:['111','11','1111','11111','1'],
+   transitions:[
+     {s:'q0',r:'1',w:'X',d:'R',n:'q1'},{s:'q0',r:'0',w:'0',d:'R',n:'q4'},
+     {s:'q0',r:BLANK,w:BLANK,d:'R',n:'qa'},
+     {s:'q1',r:'1',w:'1',d:'R',n:'q1'},{s:'q1',r:'0',w:'0',d:'R',n:'q1'},
+     {s:'q1',r:BLANK,w:'1',d:'L',n:'q2'},
+     {s:'q2',r:'1',w:'1',d:'L',n:'q2'},{s:'q2',r:'0',w:'0',d:'L',n:'q2'},
+     {s:'q2',r:'X',w:'X',d:'R',n:'q3'},
+     {s:'q3',r:'1',w:'1',d:'L',n:'q3'},{s:'q3',r:'X',w:'1',d:'R',n:'q0'},
+     {s:'q3',r:'0',w:'0',d:'R',n:'q0'},
+     {s:'q4',r:'1',w:'1',d:'R',n:'q4'},{s:'q4',r:BLANK,w:'0',d:'R',n:'qa'},
+   ]},
+];
+
+let cur=MACHINES[0], tape=[], head=0, state='', steps=0, running=false, timer=null, lastT=null, tMap={};
+const PAD=8;
+
+function buildMap(m){const mp={};for(const t of m.transitions)mp[t.s+'|'+t.r]=t;return mp;}
+
+function loadMachine(){
+  const inp=document.getElementById('inp').value.replace(/\s/g,'');
+  tape=[...inp];
+  for(let i=0;i<PAD;i++){tape.unshift(BLANK);tape.push(BLANK);}
+  head=PAD;state=cur.q0;steps=0;running=false;lastT=null;
+  if(timer){clearInterval(timer);timer=null;}
+  tMap=buildMap(cur);
+  document.getElementById('btn-run').textContent='▶ Run';
+  document.getElementById('result').className='result';
+  document.getElementById('result').textContent='';
+  document.getElementById('log').innerHTML='<span style="color:var(--text3)">Press Step or Run to begin execution...</span>';
+  renderAll();
+}
+
+function renderAll(){renderTape();renderStatus();renderTrans();renderDiagram();}
+
+function renderTape(){
+  const d=document.getElementById('tape');d.innerHTML='';
+  for(let i=0;i<tape.length;i++){
+    const c=document.createElement('div');c.className='cell';
+    if(i===head){c.classList.add('head');if(state===cur.accept)c.classList.add('acc');else if(state===cur.reject)c.classList.add('rej');}
+    const idx=document.createElement('div');idx.className='cidx';idx.textContent=i-PAD;
+    const sym=document.createElement('div');sym.className='csym';sym.textContent=tape[i]===BLANK?'□':tape[i];
+    c.appendChild(idx);c.appendChild(sym);d.appendChild(c);
+  }
+  const hc=d.children[Math.max(0,Math.min(head,d.children.length-1))];
+  if(hc)setTimeout(()=>hc.scrollIntoView({inline:'center',behavior:'smooth'}),0);
+}
+
+function renderStatus(){
+  const halted=state===cur.accept||state===cur.reject;
+  let sc='b-st';if(state===cur.accept)sc='b-acc';else if(state===cur.reject)sc='b-rej';else if(running)sc='b-run';
+  document.getElementById('status-bar').innerHTML=`
+    <span class="badge ${sc}">State: ${state}</span>
+    <span class="badge b-info">Head pos: ${head-PAD}</span>
+    <span class="badge b-info">Steps: ${steps}</span>
+    <span class="badge b-info">Tape: …${tape.slice(Math.max(0,head-2),head+3).map(x=>x===BLANK?'□':x).join('')}…</span>
+    ${halted?`<span class="badge ${state===cur.accept?'b-acc':'b-rej'}">${state===cur.accept?'✓ ACCEPTED':'✗ REJECTED'}</span>`:''}
+  `;
+  document.getElementById('btn-step').disabled=halted;
+  document.getElementById('btn-run').disabled=halted;
+}
+
+function renderTrans(){
+  const g=document.getElementById('trans-grid');g.innerHTML='';
+  for(const t of cur.transitions){
+    const c=document.createElement('div');c.className='tcell';
+    const arr=t.d==='R'?'→':'←';
+    c.textContent=`(${t.s}, ${t.r===BLANK?'□':t.r}) → (${t.w===BLANK?'□':t.w}, ${arr}, ${t.n})`;
+    if(lastT&&lastT.s===t.s&&lastT.r===t.r)c.classList.add('active');
+    g.appendChild(c);
+  }
+}
+
+function addLog(msg,cls=''){
+  const el=document.getElementById('log');
+  if(el.querySelector('span'))el.innerHTML='';
+  const d=document.createElement('div');if(cls)d.className=cls;d.textContent=msg;
+  el.appendChild(d);el.scrollTop=el.scrollHeight;
+}
+
+function doStep(){
+  if(state===cur.accept||state===cur.reject)return;
+  while(head<0){tape.unshift(BLANK);head++;}
+  while(head>=tape.length)tape.push(BLANK);
+  const sym=tape[head],key=state+'|'+sym,t=tMap[key];
+  if(!t){
+    lastT=null;state=cur.reject;
+    addLog(`Step ${steps}: No transition for (${state}, ${sym===BLANK?'□':sym}) → REJECT`,'lr');
+    renderAll();showResult();return;
+  }
+  const os=state,or_=sym;
+  tape[head]=t.w;state=t.n;head+=(t.d==='R'?1:-1);steps++;lastT=t;
+  if(head<0){tape.unshift(BLANK);head=0;}
+  if(head>=tape.length)tape.push(BLANK);
+  addLog(`Step ${steps}: (${os}, ${or_===BLANK?'□':or_}) → write '${t.w===BLANK?'□':t.w}', move ${t.d}, → ${t.n}`);
+  if(state===cur.accept)addLog(`✓ ACCEPTED in ${steps} steps`,'la');
+  else if(state===cur.reject)addLog(`✗ REJECTED in ${steps} steps`,'lr');
+  renderAll();
+  if(state===cur.accept||state===cur.reject){showResult();stopRun();}
+}
+
+function showResult(){
+  const r=document.getElementById('result');
+  r.className='result '+(state===cur.accept?'acc':'rej');
+  r.textContent=state===cur.accept?'✓  ACCEPTED — String belongs to the language':'✗  REJECTED — String does not belong to the language';
+}
+
+function stopRun(){if(timer){clearInterval(timer);timer=null;}running=false;document.getElementById('btn-run').textContent='▶ Run';}
+
+function toggleRun(){
+  if(running){stopRun();return;}
+  if(state===cur.accept||state===cur.reject)return;
+  running=true;document.getElementById('btn-run').textContent='⏸ Pause';
+  const spd=parseInt(document.getElementById('spd').value);
+  timer=setInterval(()=>doStep(),Math.round(1200/spd));
+}
+
+/* ---- MACHINE CARDS ---- */
+function buildMachineCards(){
+  const g=document.getElementById('machine-grid');g.innerHTML='';
+  MACHINES.forEach((m,i)=>{
+    const c=document.createElement('div');c.className='mcard'+(i===0?' active':'');
+    c.innerHTML=`<h3>${m.name}</h3><p>${m.desc.replace(/<[^>]+>/g,'').substring(0,60)}...</p><div class="lang">${m.lang}</div>`;
+    c.onclick=()=>{
+      cur=m;document.querySelectorAll('.mcard').forEach(x=>x.classList.remove('active'));c.classList.add('active');
+      document.getElementById('desc-box').innerHTML=m.desc;
+      buildExamples();loadMachine();
+    };
+    g.appendChild(c);
+  });
+}
+
+function buildExamples(){
+  const e=document.getElementById('examples');e.innerHTML='';
+  cur.examples.forEach(ex=>{
+    const b=document.createElement('button');b.className='ex-btn';b.textContent=ex||'(empty)';
+    b.onclick=()=>{document.getElementById('inp').value=ex;loadMachine();};
+    e.appendChild(b);
+  });
+}
+
+/* ---- STATE DIAGRAM ---- */
+function renderDiagram(){
+  const svg=document.getElementById('state-diagram');
+  svg.innerHTML='';
+  const m=cur;
+  const states=[...new Set([m.q0,...m.transitions.map(t=>t.s),...m.transitions.map(t=>t.n)])];
+  const positions={};
+  const cx=350,cy=210,r=160;
+  states.forEach((s,i)=>{
+    const angle=(2*Math.PI*i/states.length)-Math.PI/2;
+    positions[s]={x:cx+r*Math.cos(angle),y:cy+r*Math.sin(angle)};
+  });
+  // draw arrows
+  const arrowsByPair={};
+  for(const t of m.transitions){
+    const k=t.s+'->'+t.n;
+    if(!arrowsByPair[k])arrowsByPair[k]=[];
+    arrowsByPair[k].push(`${t.r===BLANK?'□':t.r}/${t.w===BLANK?'□':t.w},${t.d}`);
+  }
+  svg.innerHTML=`<defs><marker id="da" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#888" stroke-width="1.5" stroke-linecap="round"/></marker></defs>`;
+  for(const [pair,labels] of Object.entries(arrowsByPair)){
+    const [fs,ts_]=pair.split('->');
+    const fp=positions[fs],tp=positions[ts_];
+    if(!fp||!tp)continue;
+    if(fs===ts_){
+      // self-loop
+      const lx=fp.x,ly=fp.y-22;
+      const el=document.createElementNS('http://www.w3.org/2000/svg','path');
+      el.setAttribute('d',`M${fp.x-12},${fp.y-18} C${fp.x-30},${fp.y-55} ${fp.x+30},${fp.y-55} ${fp.x+12},${fp.y-18}`);
+      el.setAttribute('fill','none');el.setAttribute('stroke','#aaa');el.setAttribute('stroke-width','1');
+      el.setAttribute('marker-end','url(#da)');svg.appendChild(el);
+      const lt=document.createElementNS('http://www.w3.org/2000/svg','text');
+      lt.setAttribute('x',lx);lt.setAttribute('y',ly-30);lt.setAttribute('text-anchor','middle');
+      lt.setAttribute('font-size','9');lt.setAttribute('fill','#888');lt.setAttribute('font-family','monospace');
+      lt.textContent=labels.slice(0,2).join('; ')+(labels.length>2?'…':'');svg.appendChild(lt);
+    } else {
+      const dx=tp.x-fp.x,dy=tp.y-fp.y,len=Math.sqrt(dx*dx+dy*dy);
+      const ux=dx/len,uy=dy/len;
+      const sx=fp.x+ux*22,sy=fp.y+uy*22,ex=tp.x-ux*24,ey=tp.y-uy*24;
+      const el=document.createElementNS('http://www.w3.org/2000/svg','line');
+      el.setAttribute('x1',sx);el.setAttribute('y1',sy);el.setAttribute('x2',ex);el.setAttribute('y2',ey);
+      el.setAttribute('stroke','#bbb');el.setAttribute('stroke-width','1');el.setAttribute('marker-end','url(#da)');
+      svg.appendChild(el);
+      const mx=(sx+ex)/2-uy*14,my=(sy+ey)/2+ux*14;
+      const lt=document.createElementNS('http://www.w3.org/2000/svg','text');
+      lt.setAttribute('x',mx);lt.setAttribute('y',my);lt.setAttribute('text-anchor','middle');
+      lt.setAttribute('font-size','9');lt.setAttribute('fill','#888');lt.setAttribute('font-family','monospace');
+      lt.textContent=labels.slice(0,1).join('; ')+(labels.length>1?'…':'');svg.appendChild(lt);
+    }
+  }
+  // draw state circles
+  for(const s of states){
+    const p=positions[s];if(!p)continue;
+    const isActive=s===state;
+    const isAcc=s===m.accept,isRej=s===m.reject,isStart=s===m.q0;
+    const circle=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circle.setAttribute('cx',p.x);circle.setAttribute('cy',p.y);circle.setAttribute('r','22');
+    circle.setAttribute('fill',isActive?(isAcc?'#E1F5EE':isRej?'#FCEBEB':'#E6F1FB'):'#f7f6f2');
+    circle.setAttribute('stroke',isAcc?'#0F6E56':isRej?'#A32D2D':isActive?'#185FA5':'#bbb');
+    circle.setAttribute('stroke-width',isActive?'2.5':'1.5');
+    svg.appendChild(circle);
+    if(isAcc){
+      const c2=document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c2.setAttribute('cx',p.x);c2.setAttribute('cy',p.y);c2.setAttribute('r','18');
+      c2.setAttribute('fill','none');c2.setAttribute('stroke','#0F6E56');c2.setAttribute('stroke-width','1');
+      svg.appendChild(c2);
+    }
+    const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x',p.x);txt.setAttribute('y',p.y+1);txt.setAttribute('text-anchor','middle');
+    txt.setAttribute('dominant-baseline','central');txt.setAttribute('font-size','11');txt.setAttribute('font-weight','600');
+    txt.setAttribute('fill',isAcc?'#085041':isRej?'#791F1F':isActive?'#0C447C':'#555');
+    txt.setAttribute('font-family','monospace');txt.textContent=s;svg.appendChild(txt);
+    if(isStart){
+      const arr=document.createElementNS('http://www.w3.org/2000/svg','path');
+      arr.setAttribute('d',`M${p.x-50},${p.y} L${p.x-25},${p.y}`);
+      arr.setAttribute('fill','none');arr.setAttribute('stroke','#888');arr.setAttribute('stroke-width','1.5');
+      arr.setAttribute('marker-end','url(#da)');svg.appendChild(arr);
+    }
+  }
+}
+
+/* ---- TABS ---- */
+function switchTab(id){
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    t.classList.toggle('active',['simulator','theory','diagram','about'][i]===id);
+  });
+  document.querySelectorAll('.tab-content').forEach(c=>{
+    c.classList.toggle('active',c.id==='tab-'+id);
+  });
+  if(id==='diagram')renderDiagram();
+}
+
+// INIT
+buildMachineCards();
+document.getElementById('desc-box').innerHTML=MACHINES[0].desc;
+buildExamples();
+loadMachine();
+</script>
+</body>
+</html>
